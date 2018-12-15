@@ -1,15 +1,22 @@
 
 load <- function(){
-  if(!file.exists('walmart.rds')){
+  if(!file.exists('../Datos/walmart.rds')){
 
-    walmart <- read_csv("Datos/train.csv") 
-    saveRDS(walmart, "walmart.rds")
+    walmart <- read_csv("../Datos/train.csv") 
+    saveRDS(walmart, "../Datos/walmart.rds")
     print('walmart.rds se bajó y guardó\n')
   }
   else{
     warning('walmart.rds ya existe\n')
-    walmart <- readRDS("walmart.rds")
+    walmart <- readRDS("../Datos/walmart.rds")
   }
   
   return(walmart)
+}
+
+prepare <- function(){
+  data_sumarised <- walmart %>% group_by(TripType,VisitNumber,Weekday,DepartmentDescription) %>% 
+    summarise(Count = sum(ScanCount)) %>% 
+    spread(key=DepartmentDescription,value=Count)
+  return(data_sumarised)
 }
