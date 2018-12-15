@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(dplyr)
 library(data.table)
+library(feather)
 
 
 source("utils.R")
@@ -19,5 +20,13 @@ source("01-prepare.R")
 source("02-clean.R")
 
 summary(walmartSpread)
+```
+
+
+
+#Convertir a Feather para seguir procesando en Python
+```{r}
+path <- "../Datos/walmart.feather"
+write_feather(walmartSpread, path)
 ```
 
