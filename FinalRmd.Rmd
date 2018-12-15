@@ -10,10 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r cars}
 library(tidyverse)
 library(dplyr)
+library(data.table)
+
 
 source("utils.R")
 source("00-load.R")
 source("01-prepare.R")
+source("02-clean.R")
 
+summary(walmartSpread)
 ```
 

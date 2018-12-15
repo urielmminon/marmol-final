@@ -20,3 +20,10 @@ prepare <- function(){
     spread(key=DepartmentDescription,value=Count)
   return(data_sumarised)
 }
+
+
+clean <- function() { 
+  walmartSpread[is.na(walmartSpread)] <- 0
+  walmartSpread$MENSWEAR <- walmartSpread$`MENS WEAR`+walmartSpread$MENSWEAR
+  walmartSpread <- walmartSpread %>% subset(select = -c(`MENS WEAR`) )
+}
