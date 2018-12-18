@@ -1,0 +1,415 @@
+---
+title: "Proyecto Final Minería y Análisis de Datos"
+author: "Héctor Corro 114350, Uriel Miranda 177508, Itzel Muñoz 122803"
+date: "Diciembre 2018"
+#output: html_document
+output: 
+  html_document:
+    toc: 2
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = F, error = F, message = F)
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(feather)
+library(stringr)
+library(plotly)
+library(ggridges)
+```
+
+##Antecedentes
+
+Walmart
+
+
+###Objetivo
+
+En el presente proyecto, se realizó un modelo para categorizar las visitas que realizan los clientes a Walmart basándose únicamente en los productos que compran los clientes en su visita. La base se obtuvo de *kaggle* de la competencia titulada *"Walmart Recruiting: Trip Type Classification"*. 
+
+Las categorías están representadas por números enteros no contiguos, y no se conoce el significado de ninguna categoría. 
+
+La función que se busca optimizar, más específicamente minimizar, es la *pérdida logarítmica multiclase* también conocida como **log loss multiclase**, misma que se define como:
+
+$-\frac{1}{N}\sum_{i=1}^{N}\sum_{j=1}^{M}y_{ij}log(p_{ij})$
+
+donde $N$ es el total de visitas en el conjunto de prueba, $M$ es el total de categorías existentes (como más adelante se verá $M = 38$), $y_{ij}$ es 1 si la observación $i$ pertenece a la categoría $j$ y 0 en otro caso, $p_{ij}$ es la probabilidad obtenida por el modelo que la observación  $i$ pertenezca a la categoría $j$.
+
+###Criterio de Éxito
+
+Obtener un valor de la función *log loss* menor a 1 sobre el conjunto de prueba.
+
+##Lectura y limpieza de datos
+
+Se realiza la lectura y limpieza de datos con las funciones *utils*, *load*, *prepare* y *clean*:
+
+```{r, echo=T}
+source("utils.R")
+source("00-load.R")
+source("01-prepare.R")
+source("02-clean.R")
+
+```
+
+La base de datos original muestra un registro por cada producto que se compró en las diferentes visitas de los clientes en la tienda. Por ejemplo, si un cliente en su visita compró 10 productos diferentes, esa visita tiene 10 registros con el mismo identificador de visita y mismo tipo de visita. Los primeros renglones de la base son los siguientes:
+
+```{r, echo=F}
+head(data.frame(walmart))
+```
+
+Las variables con las que se cuenta en la base de datos son:
+
+* TripType - es una variable categórica que indica el tipo de visita que realizó una persona en Walmart, es la variable objetivo que se busca predecir
+* VisitNumber - es el identificador único para cada visita que realizaron los diferentes clientes a Walmart
+* Weekday - día de la semana en que el cliente realizó la visita a Walmart
+* Upc - es un código para identificar de forma única los productos de Walmart
+* ScanCount - número de productos de un tipo específico que se compararon, si el valor es -1 indica una devolución de producto
+* DepartmentDescription - departamente al cual pertenece el producto
+* FinelineNumber - código para identificar los productos de una forma más general que el código Upc pero más granular que el departamento
+
+
+La estructura original de la base no tiene registros únicos a nivel visita, esto complica el ajuste del modelo pues las categorías son a nivel visita. Si se trabajara con la base original, se estaría ajustando una categoría a nivel producto en lugar de a nivel visita. Por lo tanto, el tratamiento que se realizó a los datos consistió en construir la base de forma que tenga un solo renglón por visita. La variable de día de la semana es a nivel visita, por lo que no sufrió modificaciones. Respecto a las variables del departamento y número de productos, se crearon tantas columnas como departamentos existen, 68 en total, y se sumaron de acuerdo al número de productos por departamento comprados por visita. La base creada y utilizada para modelar luce como sigue:
+
+```{r}
+head(walmartSpread, n=10)
+```
+
+En cuanto a la limpieza, ésta consistió en unificar dos departamentos *MENS WEAR* con *MENSWEAR*; para todas las variables de departamento se cambiaron los NA's por 0, pues en realidad los valores nulos de esas variables son porque se realizaron cero compras de ese departamento en la respectiva visita. En los nombres de las variables, se sustituyeron los espacios por guiones bajos y se eliminaron caracteres especiales (las comas y los &) para facilitar en manejo de la base en el análisis exploratorio.
+
+De esta manera, se obtiene una base de datos con 95'674 registros (únicos a nivel visita) y 69 variables explicativas.
+
+##Análisis Exploratorio
+
+En primer lugar, se analiza la variable objetivo: el tipo de visita realizada en Walmart. Su distribución luce como se muestra en la siguiente gráfica:
+
+```{r, echo=F}
+
+p <- ggplot(walmartSpread) +
+  geom_bar(mapping=aes(as.factor(TripType)), fill = "#56B4E9") + 
+  xlab("Tipo de Compra") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplotly(p)
+
+```
+
+Se observa que existen categorías que sobresalen respecto a las demás, estas categorías son: 8, 9, 39, 40 y 999. Por el contrario, existen categorías que tienen muy poca presencia en los datos, por ejemplo la 12, 14 y 23, estas categorías con poca representación en los datos muy probablemente serán complicadas de modelar. Para tener mayor detalle se obtienen las frecuencias por categoría:
+
+
+```{r, echo=F}
+summary(as.factor(walmartSpread$TripType))
+```
+
+###Análisis Univariado
+
+Se realiza ahora el análisis univariado sobre las variables explicativas.
+
+El día de la semana tiene la siguiente distribución:
+
+
+```{r, echo = F}
+aux <- walmartSpread
+aux$Weekday <- factor(aux$Weekday, levels = c("Monday","Tuesday","Wednesday","Thursday",
+                                              "Friday","Saturday","Sunday"))
+ggplot(aux) +
+  geom_bar(mapping=aes(Weekday), fill = "#56B4E9") + 
+  xlab("Día de la semana") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+Notoriamente, la mayoría de las visitas se realizan entre el viernes y el domingo, principalmente el fin de semana. Resulta curioso que el día de la semana con menos visitas es el jueves.
+
+
+Las visitas realizadas cada día de la semana son las siguientes:
+
+```{r, echo=F}
+summary(as.factor(aux$Weekday))
+rm(aux)
+```
+
+El departmento al cual pertenecen los productos comprados y devueltos tiene la siguiente distribución:
+
+```{r}
+deptos <- walmart %>% group_by(DepartmentDescription) %>% 
+  summarise(.,total=sum(ScanCount))
+
+p <- ggplot(deptos, aes(x=DepartmentDescription, y=total)) +
+  geom_bar(fill = "#56B4E9", stat="identity") + 
+  xlab("Departamento") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplotly(p)
+```
+
+Como era de esperarse, existen departamentos con mucha población y departamentos con escasa población.
+
+Es importante recordar que la estructura de la base transformada tiene una columna por cada departamento, por lo tanto la distribución real de cada variable de departamento tiene distribuciones muy concentradas en el cero, por ejemplo:
+
+```{r, echo=F}
+#lista <- names(walmartSpread[,4:71])
+#i <- 1
+a1 <- ggplot(walmartSpread) +
+      geom_histogram(mapping=aes_string("HR_PHOTO"), fill = "#56B4E9")
+a2 <- ggplot(walmartSpread) +
+      geom_histogram(mapping=aes_string("COMM_BREAD"), fill = "#56B4E9")
+a3 <- ggplot(walmartSpread) +
+      geom_histogram(mapping=aes_string("PERSONAL_CARE"), fill = "#56B4E9")
+a4 <- ggplot(walmartSpread) +
+      geom_histogram(mapping=aes_string("SERVICE_DELI"), fill = "#56B4E9")
+
+    gridExtra::grid.arrange(a1, a2, a3, a4, ncol=2)
+```
+
+Incluso en el departamento más pobaldo *GROCERY DRY GOODS*, la distribución está bastante concentrada en el cero:
+
+```{r}
+ggplot(walmartSpread) +
+        geom_histogram(mapping=aes(GROCERY_DRY_GOODS), fill = "#56B4E9")
+```
+
+Agregar todas las gráficas como anexo
+
+
+###Análisis Bivariado
+
+Resulta complicado visualizar las gráficas de la variable objetivo con las variables explicativas, pues el tipo de visita puede tomar 38 valores diferentes. Por ello, se realizarán gráficas separadas, mostrando de 10 en 10 las categorías.
+
+La distribución del día de la semana en que se realiza la visita, para cada categoría se muestra a continuación:
+
+```{r}
+aux <- walmartSpread[walmartSpread$TripType <= 15,]
+aux$Weekday <- factor(aux$Weekday, levels = c("Monday","Tuesday","Wednesday","Thursday",
+                                              "Friday","Saturday","Sunday"))
+
+p <- ggplot(aux) + 
+  geom_bar(mapping = aes(Weekday, fill = Weekday)) + 
+  facet_grid(as.factor(aux$TripType) ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size=6) ) +
+  theme(legend.position = "none") + xlab("") + ylim(c(0,2000))
+ggplotly(p)
+
+
+aux <- walmartSpread[walmartSpread$TripType > 15 
+                     & as.numeric(walmartSpread$TripType) <= 27,] 
+aux$Weekday <- factor(aux$Weekday, levels = c("Monday","Tuesday","Wednesday","Thursday",
+                                              "Friday","Saturday","Sunday"))
+
+p <- ggplot(aux) + 
+  geom_bar(mapping = aes(Weekday, fill = Weekday)) + 
+  facet_grid(as.factor(aux$TripType) ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size=6) ) +
+  theme(legend.position = "none") + xlab("") + ylim(c(0,2000))
+ggplotly(p)
+
+aux <- walmartSpread[walmartSpread$TripType > 27 
+                     & walmartSpread$TripType <= 37,]
+aux$Weekday <- factor(aux$Weekday, levels = c("Monday","Tuesday","Wednesday","Thursday",
+                                              "Friday","Saturday","Sunday"))
+
+p <- ggplot(aux) + 
+  geom_bar(mapping = aes(Weekday, fill = Weekday)) + 
+  facet_grid(as.factor(aux$TripType) ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size=6) ) +
+  theme(legend.position = "none") + xlab("") + ylim(c(0,2000))
+ggplotly(p)
+
+aux <- walmartSpread[walmartSpread$TripType > 37,]
+aux$Weekday <- factor(aux$Weekday, levels = c("Monday","Tuesday","Wednesday","Thursday",
+                                              "Friday","Saturday","Sunday"))
+
+p <- ggplot(aux) + 
+  geom_bar(mapping = aes(Weekday, fill = Weekday)) + 
+  facet_grid(as.factor(aux$TripType) ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size=6) ) +
+  theme(legend.position = "none") + xlab("") + ylim(c(0,2000))
+ggplotly(p)
+
+```
+
+Teniendo en mente la gráfica univariada del día de la semana que se mostró en la sección anterior, y contrastando con la distribución de esta variable para cada categoría, se pueden detectar patrones de cada uno de los tipos de visita. Mencionaremos algunos de ellos:
+
+En la categoría 3, la distribución del día de la semana es bastante diferente a la global, pues tienen un nivel bajo el lunes, comienza a subir, disimuye el jueves y llega a su máximo en viernes, descendiendo el fin de semana.
+
+En la categoría 25, las visitas a Walmart tienen su menor número en lunes, y van a aumentando día a día llegando a su máximo el domingo.
+
+Para la categoría 40, el patrón es igual al global, pero las diferencias del nivel en los diferentes días es más acentuada que en la distribución global.
+
+Es importante mencionar, que todos los tipos de vísita alcanzan su máximo entre el viernes y el domingo.
+
+Respecto a la variable objetivo y los distintos departamentos, nuevamente se separa en 4 gráficas y se acotó el rango del eje x de -1 a 10 para facilitar su entendimiento e interpretación.
+
+La gráfica bivariada de la variable objetivo y el departamento con mayores compras *GROCERY DRY GOODS* se muestra a continuación:
+
+```{r}
+
+aux <- walmartSpread[walmartSpread$TripType <= 15,]
+a1 <- ggplot(aux, aes(x = GROCERY_DRY_GOODS, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+
+aux <- walmartSpread[walmartSpread$TripType > 15 
+                     & as.numeric(walmartSpread$TripType) <= 27,] 
+a2 <- ggplot(aux, aes(x = GROCERY_DRY_GOODS, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 27 
+                     & walmartSpread$TripType <= 37,]
+a3 <- ggplot(aux, aes(x = GROCERY_DRY_GOODS, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 37,] 
+a4 <- ggplot(aux, aes(x = GROCERY_DRY_GOODS, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+    gridExtra::grid.arrange(a1, a2, a3, a4, ncol=2)
+```
+
+Se observa que en la mayoría de las categorías, el departamento *GROCERY DRY GOODS* está concenctrado en el cero, pero existen categorías con distribuciones que muestran concentraciones en valores positivos. Por ejemplo 12, 15, 44 y más notoriamente en las categorías 37, 38, 39 y 40. Se puede pensar que estas categorías pueden referirse a visitas a Walmart orientadas a compras de este tipo de productos.
+
+
+Ahora se analiza la distribución del departamento *DSD GROCERY* para cada tipo de categoría:
+
+```{r}
+
+aux <- walmartSpread[walmartSpread$TripType <= 15,]
+a1 <- ggplot(aux, aes(x = DSD_GROCERY, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+
+aux <- walmartSpread[walmartSpread$TripType > 15 
+                     & as.numeric(walmartSpread$TripType) <= 27,] 
+a2 <- ggplot(aux, aes(x = DSD_GROCERY, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 27 
+                     & walmartSpread$TripType <= 37,]
+a3 <- ggplot(aux, aes(x = DSD_GROCERY, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 37,] 
+a4 <- ggplot(aux, aes(x = DSD_GROCERY, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+    gridExtra::grid.arrange(a1, a2, a3, a4, ncol=2)
+```
+
+Este departamento resulta ser más interesante, pues tiene muchas menos categorías concentradas en el cero. Por ejemplo, la categoría 35 parece tener muy poca población en el cero a diferencia del departamento que se mostró anteriormente.
+
+Ahora se realiza el análisis sobre un departamento menos poblado que los anteriores, éste es *PHARMACY OTC*:
+
+```{r}
+aux <- walmartSpread[walmartSpread$TripType <= 15,]
+a1 <- ggplot(aux, aes(x = PHARMACY_OTC, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 15 
+                     & as.numeric(walmartSpread$TripType) <= 27,] 
+a2 <- ggplot(aux, aes(x = PHARMACY_OTC, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 27 
+                     & walmartSpread$TripType <= 37,]
+a3 <- ggplot(aux, aes(x = PHARMACY_OTC, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+aux <- walmartSpread[walmartSpread$TripType > 37,] 
+a4 <- ggplot(aux, aes(x = PHARMACY_OTC, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,10))
+
+    gridExtra::grid.arrange(a1, a2, a3, a4, ncol=2)
+```
+
+En este departamento, llaman mucho la atención las categorías 4 y 5 pues son las que tienen una distribución más alejada del cero. Esto lleva a pensar que estas categorías están ligadas con la compra de productos farmacéuticos.
+
+
+El análisis se vuelve más complicado cuando los departamentos están poco poblados, por ejemplo en *JEWELRY AND SUNGLASSES*, las gráficas son las siguientes:
+
+```{r}
+aux <- walmartSpread[walmartSpread$TripType <= 15,]
+a1 <- ggplot(aux, aes(x = JEWELRY_AND_SUNGLASSES, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,5))
+
+aux <- walmartSpread[walmartSpread$TripType > 15 
+                     & as.numeric(walmartSpread$TripType) <= 27,] 
+a2 <- ggplot(aux, aes(x = JEWELRY_AND_SUNGLASSES, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,5))
+
+aux <- walmartSpread[walmartSpread$TripType > 27 
+                     & walmartSpread$TripType <= 37,]
+a3 <- ggplot(aux, aes(x = JEWELRY_AND_SUNGLASSES, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,5))
+
+aux <- walmartSpread[walmartSpread$TripType > 37,] 
+a4 <- ggplot(aux, aes(x = JEWELRY_AND_SUNGLASSES, y = as.factor(TripType), fill = as.factor(TripType)) ) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none") + ylab("TripType") +
+  xlim(c(-1,5))
+
+    gridExtra::grid.arrange(a1, a2, a3, a4, ncol=2)
+```
+
+
+En este departamento se redujo más el rango del eje x, de -1 a 5 para tener mejor visualización. La distribución de *joyería y lentes de sol* tiene una altísima concentración en el cero para prácticamente todas las categorías.
+
+##Análisis Multivariado
+
+Gráficas
+
+##Preparar base para procesar en Python
+
+Finalmente, se guardan los datos como un archivo feather para poder realizar el ajuste de modelos en Python.
+
+```{r, eval=FALSE, echo=TRUE}
+path <- "Datos/walmart.feather"
+write_feather(walmartSpread, path)
+```
+
