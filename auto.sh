@@ -9,6 +9,6 @@ curl -L -o train.csv.zip "https://drive.google.com/uc?export=download&id=1Vrr4Tv
 unzip train.csv.zip
 unzip test.csv.zip
 
-cd ../..
+cd ..
 
 Rscript PipeLine.R
