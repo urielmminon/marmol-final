@@ -24,7 +24,9 @@ library(ggridges)
 
 ##Antecedentes
 
-Walmart
+Walmart es la cadena de retail mas grande en el mundo; fue fundada por Sam Walton 1962 y desde entonces ha tenido un gran crecimiento llegando a cotizar en la bolsa de Nueva York en 1972. Actualmente Walmart ha entendido el valor de la información y con sus 20,000 tiendas en 28 países entiende que la información que se genera está muy poco aprovechada. Con esto en mente Walmart ha creado una nube privada que enfrenta al rededor de 2.5 Petabytes de información cada hora y ha creado también “The Data Café” que es un hub punta de lanza en analítica con la finalidad de aprovechar de mejor manera esa cantidad de información.
+La necesidad por encontrar insights que puedan accionar cambios es lo que está moviendo a la empresa y sus esfuerzos en el mediano y largo plazo.
+
 
 
 ###Objetivo
