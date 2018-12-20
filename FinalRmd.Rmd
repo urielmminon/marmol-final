@@ -26,7 +26,7 @@ summary(walmartSpread)
 
 #Convertir a Feather para seguir procesando en Python
 ```{r}
-path <- "../Datos/walmart.feather"
+path <- "../home/hector/marmol-final/Datos/walmart.feather"
 write_feather(walmartSpread, path)
 ```
 
