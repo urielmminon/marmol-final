@@ -20,14 +20,14 @@ library(feather)
 library(stringr)
 library(plotly)
 library(ggridges)
+library(ggpubr)
+#library(tidyverse)
 ```
 
 ##Antecedentes
 
-Walmart es la cadena de retail mas grande en el mundo; fue fundada por Sam Walton 1962 y desde entonces ha tenido un gran crecimiento llegando a cotizar en la bolsa de Nueva York en 1972. Actualmente Walmart ha entendido el valor de la información y con sus 20,000 tiendas en 28 países entiende que la información que se genera está muy poco aprovechada. Con esto en mente Walmart ha creado una nube privada que enfrenta al rededor de 2.5 Petabytes de información cada hora y ha creado también “The Data Café” que es un hub punta de lanza en analítica con la finalidad de aprovechar de mejor manera esa cantidad de información.
-La necesidad por encontrar insights que puedan accionar cambios es lo que está moviendo a la empresa y sus esfuerzos en el mediano y largo plazo.
-
-
+Walmart es la cadena de retail más grande en el mundo; fue fundada por Sam Walton 1962 y desde entonces ha tenido un gran crecimiento llegando a cotizar en la bolsa de Nueva York en 1972. Actualmente Walmart ha entendido el valor de la información y con sus 20,000 tiendas en 28 países entiende que los datos que generan están muy poco aprovechados. Con esto en mente Walmart ha creado una nube privada que enfrenta alrededor de 2.5 Petabytes de información cada hora y ha creado también “The Data Café” que es un hub punta de lanza en analítica con la finalidad de aprovechar de mejor manera esa cantidad de información.
+La necesidad de encontrar insights que puedan accionar cambios es lo que está moviendo a la empresa y sus esfuerzos en el mediano y largo plazo.
 
 ###Objetivo
 
@@ -80,7 +80,7 @@ La estructura original de la base no tiene registros únicos a nivel visita, est
 head(walmartSpread, n=10)
 ```
 
-En cuanto a la limpieza, ésta consistió en unificar dos departamentos *MENS WEAR* con *MENSWEAR*; para todas las variables de departamento se cambiaron los NA's por 0, pues en realidad los valores nulos de esas variables son porque se realizaron cero compras de ese departamento en la respectiva visita. En los nombres de las variables, se sustituyeron los espacios por guiones bajos y se eliminaron caracteres especiales (las comas y los &) para facilitar en manejo de la base en el análisis exploratorio.
+En cuanto a la limpieza, ésta consistió en unificar dos departamentos *MENS WEAR* con *MENSWEAR*; para todas las variables de departamento se cambiaron los NA's por 0, pues en realidad los valores nulos de esas variables son porque se realizaron cero compras de ese departamento en la respectiva visita. En los nombres de las variables, se sustituyeron los espacios por guiones bajos y se eliminaron caracteres especiales (las comas y los &) para facilitar el manejo de la base en el análisis exploratorio.
 
 De esta manera, se obtiene una base de datos con 95'674 registros (únicos a nivel visita) y 69 variables explicativas.
 
@@ -171,8 +171,6 @@ Incluso en el departamento más pobaldo *GROCERY DRY GOODS*, la distribución es
 ggplot(walmartSpread) +
         geom_histogram(mapping=aes(GROCERY_DRY_GOODS), fill = "#56B4E9")
 ```
-
-Agregar todas las gráficas como anexo
 
 
 ###Análisis Bivariado
@@ -402,16 +400,488 @@ a4 <- ggplot(aux, aes(x = JEWELRY_AND_SUNGLASSES, y = as.factor(TripType), fill 
 
 En este departamento se redujo más el rango del eje x, de -1 a 5 para tener mejor visualización. La distribución de *joyería y lentes de sol* tiene una altísima concentración en el cero para prácticamente todas las categorías.
 
-##Análisis Multivariado
+###Análisis Multivariado
 
-Gráficas
+Dada la cantidad de variables con las que se cuenta y los 38 valores que toma del tipo de visita, el análisis multivariado tiene muchas posibles combinaciones. A continuación se muestran algunas de ellas.
+
+Se puede obtener por ejemplo, la distribución conjunta de 2 departamentos con la variable objetivo (para facilitar la visualización, se separan por grupos de categorías):
+
+```{r}
+
+aux <- walmartSpread[walmartSpread$TripType <= 8,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+
+aux <- walmartSpread[walmartSpread$TripType > 8 & walmartSpread$TripType <= 19,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+
+aux <- walmartSpread[walmartSpread$TripType > 19 & walmartSpread$TripType <= 25,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+
+
+aux <- walmartSpread[walmartSpread$TripType > 25 & walmartSpread$TripType <= 31,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+
+
+aux <- walmartSpread[walmartSpread$TripType > 31 & walmartSpread$TripType <= 37,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+
+aux <- walmartSpread[walmartSpread$TripType > 37 & walmartSpread$TripType <= 41,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+
+aux <- walmartSpread[walmartSpread$TripType > 41,]
+
+aux$TripTypeF <- as.factor(aux$TripType)
+
+ggscatterhist(aux, x = "DSD_GROCERY", y = "PRODUCE",
+              color = "TripTypeF", alpha = 0.6,
+              margin.plot = "boxplot",
+              ggtheme = theme_bw() )
+
+```
+
+Resulta difícil interpretar las gráficas para las categorías poco pobladas. Cuando las categorías están más pobladas, por ejemplo en la 37, se observa que estos dos departamentso *PRODUCE* y *DSD GROCERY*, están dispersos el primero en valores menores a 20 y el segundo en valores menores a 10. Por el contrario en la categoría 40, los valores de *PRODUCE* son menores a 15 y los valores de *DSD GROCERY* son menores a 25.
+
+##Feature Engineering
+
+En cuanto a la ingeniería de características, se construyeron las siguientes variables a partir de las disponibles originalmente:
+
+* Total de productos comprados en la visita
+
+* Indicadora de devolución de productos, vale 1 si se devolvió al menos un producto en la visita y 0 en otro caso
+
+* Total de productos devueltos en la visita
+
+* Total de departamentos visitados, si se compró al menos un producto en el departamento éste cuenta como 1 en la suma de departamentos visitados
+
+* Productos diferentes comprados respecto a UPC, es decir cuántos productos con diferente código UPC se compraron en la visita
+
+* Día del mes en que se realizó la visita, se explica más adelante esta variable
+
+```{r}
+
+#regresar a nombres originales
+colnames(walmartSpread) <- names_orig
+                             
+#total productos comprados
+walmartSpread$total_prod <- rowSums(walmartSpread[,-c(1,2,3)])
+
+#indicadora devoluciones
+
+walmart.Dev <- walmart %>% group_by(VisitNumber) %>% 
+  summarise(min_p = min(ScanCount)) 
+
+walmart.Dev <- mutate(walmart.Dev, ind_dev = ifelse(min_p < 0, 1, 0))
+walmart.Dev$min_p <- NULL
+
+walmartSpread <- merge(walmartSpread,walmart.Dev, by = "VisitNumber")
+
+# total de departamentos visitados
+walmartSpread$departamentos_visitados <- apply(walmartSpread[,4:71], 1, function(x) sum(x!=0))
+
+# cuenta de articulos diferentes basados en upc
+prod_distintos <- walmart %>% filter(ScanCount>0) %>% group_by(VisitNumber) %>% summarize(prod_distintos_upc=n())
+walmartSpread <- left_join(walmartSpread,prod_distintos,by=c("VisitNumber"="VisitNumber"))
+
+# cuenta de articulos devueltos
+prod_devueltos<- walmart %>% filter(ScanCount<0) %>%  arrange(VisitNumber) %>%  group_by(VisitNumber) %>% summarize(prod_devueltos=n())
+walmartSpread <- left_join(walmartSpread,prod_devueltos,by=c("VisitNumber"="VisitNumber"))
+
+walmartSpread[is.na(walmartSpread)] <- 0
+
+```
+
+```{r}
+walmart.test <- read_csv("Datos/test.csv") 
+
+walmart.testSpread <- walmart.test %>% group_by(VisitNumber,Weekday,DepartmentDescription) %>% 
+  summarise(Count = sum(ScanCount)) %>% 
+  spread(key=DepartmentDescription,value=Count)
+
+walmart.testSpread[is.na(walmart.testSpread)] <- 0
+walmart.testSpread$MENSWEAR <- walmart.testSpread$`MENS WEAR`+walmart.testSpread$MENSWEAR
+walmart.testSpread <- walmart.testSpread %>% subset(select = -c(`MENS WEAR`) )
+walmart.testSpread$HEALTH_AND_BEAUTY_AIDS <- 0
+
+#total productos comprados
+walmart.testSpread$total_prod <- rowSums(walmart.testSpread[,-c(1,2)])
+
+#indicadora devoluciones
+
+walmart.testDev <- walmart.test %>% group_by(VisitNumber) %>% 
+  summarise(min_p = min(ScanCount)) 
+
+walmart.testDev <- mutate(walmart.testDev, ind_dev = ifelse(min_p < 0, 1, 0))
+walmart.testDev$min_p <- NULL
+
+#pegar variable a la base completa
+walmart.testSpread <- merge(walmart.testSpread,walmart.testDev, by = "VisitNumber")
+
+# total de departamentos visitados
+walmart.testSpread$departamentos_visitados <- apply(walmart.testSpread[,4:71], 1, function(x) sum(x!=0))
+
+
+# cuenta de articulos diferentes basados en upc
+prod_distintos <- walmart.test %>% filter(ScanCount>0) %>% group_by(VisitNumber) %>% summarize(prod_distintos_upc=n())
+walmart.testSpread <- left_join(walmart.testSpread,prod_distintos,by=c("VisitNumber"="VisitNumber"))
+
+
+# cuenta de articulos devueltos
+prod_devueltos<- walmart.test %>% filter(ScanCount<0) %>%  arrange(VisitNumber) %>%  group_by(VisitNumber) %>% summarize(prod_devueltos=n())
+walmart.testSpread <- left_join(walmart.testSpread,prod_devueltos,by=c("VisitNumber"="VisitNumber"))
+
+walmart.testSpread[is.na(walmart.testSpread)] <- 0
+
+
+```
+
+
+```{r}
+walmart.todo <- rbind(walmartSpread[,c(1,3)],walmart.testSpread[,c(1,2)])
+
+walmart.ord <- walmart.todo[order(walmart.todo$VisitNumber),c(1,2)]
+
+
+#detectar cambios de semana
+viernes <- data.frame(walmart.ord[walmart.ord$Weekday=="Friday",])
+viernes <- mutate(viernes, lag_v = dplyr::lag(VisitNumber, default=0))
+
+viernes$dif <- viernes$VisitNumber - viernes$lag_v
+
+cambio.viernes <- viernes[viernes$dif > 1 & viernes$lag_v != 0,]
+
+##sábado
+
+sabado <- data.frame(walmart.ord[walmart.ord$Weekday=="Saturday",])
+sabado <- mutate(sabado, lag_v = dplyr::lag(VisitNumber, default=0))
+
+sabado$dif <- sabado$VisitNumber - sabado$lag_v
+
+cambio.sabado <- sabado[sabado$dif > 1 & sabado$lag_v != 0,]
+
+##domingo
+
+domingo <- data.frame(walmart.ord[walmart.ord$Weekday=="Sunday",])
+domingo <- mutate(domingo, lag_v = dplyr::lag(VisitNumber, default=0))
+
+
+domingo$dif <- domingo$VisitNumber - domingo$lag_v
+
+cambio.domingo <- domingo[domingo$dif > 1 & domingo$lag_v != 0,]
+
+##lunes
+
+lunes <- data.frame(walmart.ord[walmart.ord$Weekday=="Monday",])
+lunes <- mutate(lunes, lag_v = dplyr::lag(VisitNumber, default=0))
+
+lunes$dif <- lunes$VisitNumber - lunes$lag_v
+
+cambio.lunes <- lunes[lunes$dif > 1 & lunes$lag_v != 0,]
+
+##martes
+
+martes <- data.frame(walmart.ord[walmart.ord$Weekday=="Tuesday",])
+martes <- mutate(martes, lag_v = dplyr::lag(VisitNumber, default=0))
+
+martes$dif <- martes$VisitNumber - martes$lag_v
+
+cambio.martes <- martes[martes$dif > 1 & martes$lag_v != 0,]
+
+##miércoles
+
+miercoles <- data.frame(walmart.ord[walmart.ord$Weekday=="Wednesday",])
+miercoles <- mutate(miercoles, lag_v = dplyr::lag(VisitNumber, default=0))
+
+miercoles$dif <- miercoles$VisitNumber - miercoles$lag_v
+
+cambio.miercoles <- miercoles[miercoles$dif > 1 & miercoles$lag_v != 0,]
+
+##jueves
+
+jueves <- data.frame(walmart.ord[walmart.ord$Weekday=="Thursday",])
+jueves <- mutate(jueves, lag_v = dplyr::lag(VisitNumber, default=0))
+
+jueves$dif <- jueves$VisitNumber - jueves$lag_v
+
+cambio.jueves <- jueves[jueves$dif > 1 & jueves$lag_v != 0,]
+
+#######
+
+jueves$cambio1 <- cambio.jueves[1,"VisitNumber"]
+jueves$cambio2 <- cambio.jueves[2,"VisitNumber"]
+jueves$cambio3 <- cambio.jueves[3,"VisitNumber"]
+
+jueves <- mutate(jueves, dia_mes = ifelse(VisitNumber < cambio1, 7, 
+                                              ifelse(VisitNumber < cambio2, 14, 
+                                              ifelse(VisitNumber < cambio3, 21, 28)
+                                                     ) 
+                                              ))
+##
+
+
+miercoles$cambio1 <- cambio.miercoles[1,"VisitNumber"]
+miercoles$cambio2 <- cambio.miercoles[2,"VisitNumber"]
+miercoles$cambio3 <- cambio.miercoles[3,"VisitNumber"]
+
+miercoles <- mutate(miercoles, dia_mes = ifelse(VisitNumber < cambio1, 6, 
+                                              ifelse(VisitNumber < cambio2, 13, 
+                                                     ifelse(VisitNumber < cambio3, 20, 27)
+                                              ) 
+))
+
+##
+
+martes$cambio1 <- cambio.martes[1,"VisitNumber"]
+martes$cambio2 <- cambio.martes[2,"VisitNumber"]
+martes$cambio3 <- cambio.martes[3,"VisitNumber"]
+
+martes <- mutate(martes, dia_mes = ifelse(VisitNumber < cambio1, 5, 
+                                                ifelse(VisitNumber < cambio2, 12, 
+                                                       ifelse(VisitNumber < cambio3, 19, 26)
+                                                ) 
+))
+
+##
+
+lunes$cambio1 <- cambio.lunes[1,"VisitNumber"]
+lunes$cambio2 <- cambio.lunes[2,"VisitNumber"]
+lunes$cambio3 <- cambio.lunes[3,"VisitNumber"]
+
+lunes <- mutate(lunes, dia_mes = ifelse(VisitNumber < cambio1, 4, 
+                                          ifelse(VisitNumber < cambio2, 11, 
+                                                 ifelse(VisitNumber < cambio3, 18, 25)
+                                          ) 
+))
+
+##
+
+domingo$cambio1 <- cambio.domingo[1,"VisitNumber"]
+domingo$cambio2 <- cambio.domingo[2,"VisitNumber"]
+domingo$cambio3 <- cambio.domingo[3,"VisitNumber"]
+domingo$cambio4 <- cambio.domingo[4,"VisitNumber"]
+
+domingo <- mutate(domingo, dia_mes = ifelse(VisitNumber < cambio1, 3, 
+                                          ifelse(VisitNumber < cambio2, 10, 
+                                          ifelse(VisitNumber < cambio3, 17, 
+                                          ifelse(VisitNumber < cambio4, 24,31)
+                                                      )
+                                        ) 
+))
+
+##
+
+sabado$cambio1 <- cambio.sabado[1,"VisitNumber"]
+sabado$cambio2 <- cambio.sabado[2,"VisitNumber"]
+sabado$cambio3 <- cambio.sabado[3,"VisitNumber"]
+sabado$cambio4 <- cambio.sabado[4,"VisitNumber"]
+
+sabado <- mutate(sabado, dia_mes = ifelse(VisitNumber < cambio1, 2, 
+                                            ifelse(VisitNumber < cambio2, 9, 
+                                                   ifelse(VisitNumber < cambio3, 16, 
+                                                          ifelse(VisitNumber < cambio4, 23,30)
+                                                   )
+                                            ) 
+))
+
+##
+
+viernes$cambio1 <- cambio.viernes[1,"VisitNumber"]
+viernes$cambio2 <- cambio.viernes[2,"VisitNumber"]
+viernes$cambio3 <- cambio.viernes[3,"VisitNumber"]
+viernes$cambio4 <- cambio.viernes[4,"VisitNumber"]
+
+viernes <- mutate(viernes, dia_mes = ifelse(VisitNumber < cambio1, 1, 
+                                          ifelse(VisitNumber < cambio2, 8, 
+                                                 ifelse(VisitNumber < cambio3, 15, 
+                                                        ifelse(VisitNumber < cambio4, 22,29)
+                                                 )
+                                          ) 
+))
+
+juntar <- rbind(viernes[,c("VisitNumber","dia_mes")],sabado[,c("VisitNumber","dia_mes")],
+                domingo[,c("VisitNumber","dia_mes")],lunes[,c("VisitNumber","dia_mes")],
+                martes[,c("VisitNumber","dia_mes")],miercoles[,c("VisitNumber","dia_mes")],
+                jueves[,c("VisitNumber","dia_mes")])
+
+walmartSpread <- merge(walmartSpread, juntar, by = "VisitNumber")
+
+```
+
+El total de productos comprados tiene la siguiente distribución:
+
+```{r}
+p <- ggplot(walmartSpread) +
+  geom_histogram(mapping = aes(total_prod),  fill = "#56B4E9", bins = 70) +
+  xlab("Total Productos")
+ggplotly(p)
+```
+
+En la mitad de las visitas realizadas, los clientes compran 4 productos, éste es el valor de su mediana:
+
+```{r}
+summary(walmartSpread$total_prod)
+```
+
+La indicadora devolución de productos luce como sigue:
+
+```{r}
+p <- ggplot(walmartSpread) +
+  geom_bar(mapping = aes(as.factor(ind_dev)),  fill = "#56B4E9") +
+  xlab("Indicadora Devolución")
+ggplotly(p)
+```
+
+Aproximadamente, en el 11.6% de las visitas se realiza alguna devolución de producto. Este porcentaje puede considerarse alto.
+
+
+La distribución de productos devueltos está concentrada en el cero, pues como se vio en la indicadora, en la mayoría de las visitas no se devuelven productos.
+
+```{r}
+p <- ggplot(walmartSpread) +
+  geom_histogram(mapping = aes(prod_devueltos),  fill = "#56B4E9", bins = 20) +
+  xlab("Total Productos Devueltos")
+ggplotly(p)
+```
+
+De la distribución de la variable *Departamentos visitados* se concluye que en la mayoría de las visitas los clientes compran productos de máximo 5 departamentos diferentes:
+
+```{r}
+summary(walmartSpread$departamentos_visitados)
+```
+
+
+```{r}
+p <- ggplot(walmartSpread) +
+  geom_histogram(mapping = aes(departamentos_visitados),  fill = "#56B4E9", bins = 20) +
+  xlab("Total Departamentos")
+ggplotly(p)
+```
+
+En cuanto al número de productos con diferente UPC, la mayoría de los clientes compran en su visita productos de máximo 8 códigos UPC distintos.
+
+```{r}
+summary(walmartSpread$prod_distintos_upc)
+```
+
+
+```{r}
+p <- ggplot(walmartSpread) +
+  geom_histogram(mapping = aes(prod_distintos_upc),  fill = "#56B4E9", bins = 50) +
+  xlab("Productos UPC")
+ggplotly(p)
+```
+
+Sobre la variable del *día del mes*, se realizó el siguiente análisis para llegar a su construcción: Al juntar las bases train y test, ordenarlas por el código de visita y graficar la distribución de la variable *día de la semana* se observó la siguiente gráfica:
+
+```{r}
+walmart.todo <- rbind(walmartSpread[,c(1,3)],walmart.testSpread[,c(1,2)])
+walmart.ord <- walmart.todo[order(walmart.todo$VisitNumber),c(1,2)]
+
+walmart.ord <- mutate(walmart.ord, dia = ifelse(Weekday == "Friday", 1, 
+                                                ifelse(Weekday == "Saturday", 2,
+                                                ifelse(Weekday == "Sunday", 3,
+                                                ifelse(Weekday == "Monday", 4,
+                                                ifelse(Weekday == "Tuesday", 5,
+                                                ifelse(Weekday == "Wednesday", 6, 7
+                                                )))))))
+
+ggplot(walmart.ord) +
+  geom_point(mapping = aes(VisitNumber,dia)) +
+  ylab("Día de la semana") + ylim(c(0,7))
+
+  
+```
+
+En esta gráfica, el valor 1 en el eje *y* representa el viernes, el valor 2 el sábado, así sucesivamente hasta el valor 7 que representa al jueves. Al observarla, lleva a pensar que de alguna forma, los códigos de visita están ligados con el tiempo, parece ser que se trata de 31 días iniciando con un jueves y finalizando en domingo. 
+
+Por lo tanto se construyó la variable día del mes, numerando de 1 a 31 los diferentes días de la semana de acuerdo a su código de visita. Su distribución es la siguiente:
+
+```{r}
+ggplot(juntar) + 
+  geom_point(mapping = aes(VisitNumber,dia_mes))
+
+```
+
 
 ##Preparar base para procesar en Python
 
-Finalmente, se guardan los datos como un archivo feather para poder realizar el ajuste de modelos en Python.
+Finalmente en R, se guardan los datos como un archivo feather para poder realizar el ajuste de modelos en Python.
 
 ```{r, eval=FALSE, echo=TRUE}
 path <- "Datos/walmart.feather"
 write_feather(walmartSpread, path)
 ```
 
+
+##Modelos
+
+Todos los modelos se calcularon en Python, siguiendo esta metodología:
+
+* Se parte la base train en train (train del train) y test (test del train), utilizando muestreo estratificado por la variable objetivo
+* Se realiza un grid de hiperparámetros de acuerdo al tipo de modelo (regresión, bosques, etc)
+* Se calculan los modelos con el train del train, sobre el grid de hiperparámetros realizando cross validation
+* Siguiendo el criterio de optimizar la función log loss, se elige el mejor conjunto de hiperparámetros
+* Se calcula el desempeño del modelo con los mejores hiperparámetros sobre el test del train
+* Se ajusta un modelo con los mejores hiperparámetros sobre toda la base train utilizando cross validation
+* Se realiza el *predict* sobre el conjunto de prueba
+* Se sube esta predicción a kaggle para obtener el desempeño final del modelo
+
+Se ajustaron los siguientes modelos: regresión logística multinomial, bosques aleatorios, máquinas de soporte vectorial, red neuronal. El desempeño final (evaluación de kaggle) de cada uno fue:
+
+| Modelo                       | Parámetros                                | Tiempo Ajuste | Public Score|
+| ---------------------------- |:-----------------------------------------:| -------:| -------:|
+| Regresión Multinomial        | penalización L1, C = 1                    |   3 hrs |  1.3185 |
+| Bosque Aleatorio             | depth = 100, feat = sqrt, split = 10, n_est = 1500                                     |   4 hrs |  2.1320 |
+| Máquina de Soporte Vectorial | kernel lineal, C = 10                     |   5 hrs |  1.0820 |
+| Red Neuronal                 | alpha 100, 30 capas, 1000 iter, semilla 0 |   4 hrs |  1.0370 |
+
+El mejor ajuste se obtuvo con la red neuronal consiguiendo un log loss muy cercano a 1, es importante mencionar que la máquina de soporte tuvo un desempeño muy similar. Nuestro mejor modelo nos situaría en el lugar 445 del total de 1047 participantes en la competencia, esto es el percentil 42%.
+
+Por último, se ajustó un modelo siguiendo la página http://kaslemr.github.io/Walmart_Kaggle_Competition/, donde el competidor menciona el método final que utilizó para ajustar su modelo.
+
+
+El competidor utilizó la liberaría **XGB** la cual contiene un algoritmo de *gradient boosting*. Este algoritmo consiste en ensambles de árboles de decisión. La diferencia de esta liberería respecto a otras de ensambles, es el parámetro para forzar a que termine el modelo después de no mejorar en cierto número de iteraciones. De esta manera evita el sobreajuste y su tiempo de entretanmiento suele ser bajo. 
+
+El modelo se ajustó siguiendo su código, parte la base de entrenamiento en train y en test para la construcción del modelo, sin usar validación cruzada ni optimización de hiperparámetros. Tardó 20 minutos en terminar de ajustarse. El desempeño final (kaggle) que se obtuvo fue de **0.9647**, logrando así la métrica de éxito (log loss menor a 1), lo cual nos situaría en la posición 411, percentil 39%.
