@@ -486,7 +486,9 @@ Resulta difícil interpretar las gráficas para las categorías poco pobladas. C
 
 ##Feature Engineering
 
-En cuanto a la ingeniería de características, se construyeron las siguientes variables a partir de las disponibles originalmente:
+En cuanto a la ingeniería de características, la construcción de la base a nivel visita fue el paso esencial, pues permite encontrar un modelo más acertivo, y mas que limpieza de datos fue feature engineering . La construcción de las variables de productos comprados y/o devueltos por departamento también formaron parte del feature engineering.
+
+Adicionalmente, se construyeron las siguientes variables a partir de las disponibles originalmente:
 
 * Total de productos comprados en la visita
 
@@ -864,7 +866,7 @@ Todos los modelos se calcularon en Python, siguiendo esta metodología:
 * Se calculan los modelos con el train del train, sobre el grid de hiperparámetros realizando cross validation
 * Siguiendo el criterio de optimizar la función log loss, se elige el mejor conjunto de hiperparámetros
 * Se calcula el desempeño del modelo con los mejores hiperparámetros sobre el test del train
-* Se ajusta un modelo con los mejores hiperparámetros sobre toda la base train utilizando cross validation
+* Se ajusta un modelo con los mejores hiperparámetros sobre toda la base train
 * Se realiza el *predict* sobre el conjunto de prueba
 * Se sube esta predicción a kaggle para obtener el desempeño final del modelo
 
