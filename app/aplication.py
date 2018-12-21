@@ -2,7 +2,7 @@ from flask import Flask, url_for, jsonify, request, json
 import pickle
 import numpy as np
 
-with open("model3.pkl", "rb") as f:
+with open("/home/hector/marmol-final/model3.pkl", "rb") as f:
 	model = pickle.load(f)
 
 app = Flask(__name__)
@@ -12,8 +12,8 @@ app = Flask(__name__)
 def predict():
 	data = request.get_json(force=True)
 	results = {}
-	y_hat = model.predict(np.array(data))
-	results['parameters']= data
+	y_hat = model.predict(np.array(data['exp']))
+	results['parameters']= data['exp']
 	results['resultado'] = y_hat.tolist()
 	return jsonify(results)
 
